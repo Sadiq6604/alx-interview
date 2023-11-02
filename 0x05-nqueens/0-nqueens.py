@@ -1,159 +1,140 @@
 #!/usr/bin/python3
-"""0-nqueens finds all possible solutions the N queens puzzle, including
-translations and reflections.
-
-Attempted virtual backtracking without recursion. In local tests process will
-start to slow down visibly for N > 8, and is successful up to N = 11 but
-will be killed if used for N > 11. Recursion could allow for a lighter weight
-process, but it's not yet apparent to this student how to retain a record of
-which solutions are already derived with that method.
-
-Attributes:
-    N (int): base number of queens, and length of board side in piece positions
-    candidates (list) of (list) of (list) of (int): list of all successful
-        solutions for given amount of columns checked
-
 """
-from sys import argv
+   Description: The N queens puzzle is the challenge of placing N non-attacking
+                queens on an N×N chessboard. Write a program that solves the N
+                queens problem.
+   Usage: nqueens N:
+          If the user called the program with the wrong number of arguments,
+          print Usage: nqueens N, followed by a new line, and exit with the
+          status 1
+   where N must be an integer greater or equal to 4:
+          If N is not an integer, print N must be a number, followed by a new
+          line, and exit with the status 1
+          If N is smaller than 4, print N must be at least 4, followed by a new
+          line, and exit with the status 1
+   The program should print every possible solution to the problem:
+          One solution per line
+          Format: see example
+          You don’t have to print the solutions in a specific order
+   You are only allowed to import the sys module
+"""
 
-if len(argv) is not 2:
-    print('Usage: nqueens N')
-    exit(1)
 
-if not argv[1].isdigit():
-    print('N must be a number')
-    exit(1)
-
-N = int(argv[1])
-
-if N < 4:
-    print('N must be at least 4')
-    exit(1)
+import sys
 
 
-def board_column_gen(board=[]):
-    """Adds a column of zeroes to the right of any board about to be tested for
-    queen arrangements in that column.
-
+def print_board(board):
+    """ print_board
     Args:
-        board (list) of (list) of (int): 2D list of ints, only as wide as
-        needed to test the rightmost column for queen conflicts.
-
-    Returns:
-        modified 2D list
-
+        board - list of list with length sys.argv[1]
     """
-    if len(board):
-        for row in board:
-            row.append(0)
-    else:
-        for row in range(N):
-            board.append([0])
-    return board
+    new_list = []
+    for i, row in enumerate(board):
+        value = []
+        for j, col in enumerate(row):
+            if col == 1:
+                value.append(i)
+                value.append(j)
+        new_list.append(value)
+
+    print(new_list)
 
 
-def add_queen(board, row, col):
-    """Sets "queen," or 1, to coordinates given in board.
-
+def isSafe(board, row, col, number):
+    """ isSafe
     Args:
-        board (list) of (list) of (int): 2D list of ints, only as wide as
-            needed to test the rightmost column for queen conflicts.
-        row (int): first dimension index
-        col (int): second dimension index
-
+        board - list of list with length sys.argv[1]
+        row - row to check if is safe doing a movement in this position
+        col - col to check if is safe doing a movement in this position
+        number: size of the board
+    Return: True of False
     """
-    board[row][col] = 1
 
+    # Check this row in the left side
+    for i in range(col):
+        if board[row][i] == 1:
+            return False
 
-def new_queen_safe(board, row, col):
-    """For the board given, checks that for a new queen placed in the rightmost
-    column, there are no other "queen"s, or 1 values, in the martix to the
-    left, and diagonally up-left and down-left.
+    # Check upper diagonal on left side
+    for i, j in zip(range(row, -1, -1), range(col, -1, -1)):
+        if board[i][j] == 1:
+            return False
 
-    Args:
-        board (list) of (list) of (int): 2D list of ints, only as wide as
-            needed to test the rightmost column for queen conflicts.
-        row (int): first dimension index
-        col (int): second dimension index
+    for i, j in zip(range(row, number, 1), range(col, -1, -1)):
+        if board[i][j] == 1:
+            return False
 
-    Returns:
-        True if no left side conflicts found for new queen, or False if a
-    conflict is found.
-
-    """
-    x = row
-    y = col
-
-    for i in range(1, N):
-        if (y - i) >= 0:
-            # check up-left diagonal
-            if (x - i) >= 0:
-                if board[x - i][y - i]:
-                    return False
-            # check left
-            if board[x][y - i]:
-                return False
-            # check down-left diagonal
-            if (x + i) < N:
-                if board[x + i][y - i]:
-                    return False
     return True
 
 
-def coordinate_format(candidates):
-    """Converts a board (matrix of 1 and 0) into a series of row/column
-    indicies of each queen/1.
-
+def solveNQUtil(board, col, number):
+    """ Auxiliar method to find the posibilities of answer
     Args:
-    candidates (list) of (list) of (list) of (int): list of all successful
-        solutions for amount of columns last checked
-
-    Attributes:
-        holberton (list) of (list) of (int): each member list contains the row
-    column number for each queen found
-
+        board - Board to resolve
+        col - Number of col
+        number - size of the board
     Returns:
-        holberton, the list of coordinates
-
+        All the posibilites to solve the problem
     """
-    holberton = []
-    for x, attempt in enumerate(candidates):
-        holberton.append([])
-        for i, row in enumerate(attempt):
-            holberton[x].append([])
-            for j, col in enumerate(row):
-                if col:
-                    holberton[x][i].append(i)
-                    holberton[x][i].append(j)
-    return holberton
 
-# init candidates list with first column of 0s
-candidates = []
-candidates.append(board_column_gen())
+    if (col == number):
+        print_board(board)
+        return True
+    res = False
+    for i in range(number):
 
-# proceed column by column, testing the rightmost
-for col in range(N):
-    # start a new generation of the candidate list for every round of testing
-    new_candidates = []
-    # test each candidate from previous round, at current column
-    for matrix in candidates:
-        # for every row in that candidate's rightmost column
-        for row in range(N):
-            # are there any conflicts in placing a queen at those coordinates?
-            if new_queen_safe(matrix, row, col):
-                # no? then create a "child" (copy) of that candidate
-                temp = [line[:] for line in matrix]
-                # place a queen in that position
-                add_queen(temp, row, col)
-                # and unless you're in the last round of testing,
-                if col < N - 1:
-                    # add a new column of 0s on the right for the next round
-                    board_column_gen(temp)
-                # add that new candidate to this round's list of successes
-                new_candidates.append(temp)
-    # when finished with the round, discard the "parent" candidates
-    candidates = new_candidates
+        if (isSafe(board, i, col, number)):
 
-# format results to match assignment output
-for item in coordinate_format(candidates):
-    print(item)
+            # Place this queen in board[i][col]
+            board[i][col] = 1
+
+            # Make result true if any placement
+            # is possible
+            res = solveNQUtil(board, col + 1, number) or res
+
+            board[i][col] = 0  # BACKTRACK
+
+    return res
+
+
+def solve(number):
+    """ Find all the posibilities if exists
+    Args:
+        number - size of the board
+    """
+    board = [[0 for i in range(number)]for i in range(number)]
+
+    if not solveNQUtil(board, 0, number):
+        return False
+
+    return True
+
+
+def validate(args):
+    """ Validate the input data to verify if the size to
+        answer is posible
+    Args:
+        args - sys.argv
+    """
+    if (len(args) == 2):
+        # Validate data
+        try:
+            number = int(args[1])
+        except Exception:
+            print("N must be a number")
+            exit(1)
+        if number < 4:
+            print("N must be at least 4")
+            exit(1)
+        return number
+    else:
+        print("Usage: nqueens N")
+        exit(1)
+
+
+if __name__ == "__main__":
+    """ Main method to execute the application
+    """
+
+    number = validate(sys.argv)
+    solve(number)
